@@ -1,0 +1,25 @@
+:root {
+  --bar-height: 32px;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: transparent;
+}
+
+html, body, .bar, .bar * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.bar {
+  height: var(--bar-height);
+  width: 100vw;
+  background: transparent;
+}
