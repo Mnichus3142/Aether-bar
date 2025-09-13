@@ -6,15 +6,19 @@ use gtk4::{Application, ApplicationWindow};
 use gtk4::CssProvider;
 use gtk4::gdk;
 use gtk4_layer_shell as gls;
-use gls::LayerShell; // metody layer-shell jako trait
+use gls::LayerShell;
 use gls::KeyboardMode;
 use std::path::PathBuf;
 use gio::File;
-// Zmiana: używamy webkit6 (zgodnego z GTK4)
-use webkit6::prelude::*; // WebViewExt/WebViewExtManual
+use std::fs;
+use webkit6::prelude::*;
 use webkit6::WebView;
+use hyprland::data::{Animations, Binds, Client, Clients, Monitor, Monitors, Workspace, Workspaces};
+use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
+use battery::Manager as BatteryManager;
+use battery::Battery as BatteryDevice;
 
-const APP_ID: &str = "dev.example.hyprbar";
+const APP_ID: &str = "dev.example.aether";
 const BAR_HEIGHT: i32 = 32;
 
 fn find_static_dir() -> PathBuf {
@@ -33,15 +37,13 @@ fn find_static_dir() -> PathBuf {
 }
 
 fn build_bar(app: &Application) -> ApplicationWindow {
-    // Layer-shell window
     let win = ApplicationWindow::builder()
         .application(app)
-        .title("HyprBar")
+        .title("Aether")
         .decorated(false)
         .resizable(false)
         .build();
 
-    // Globalny CSS: brak tła okna GTK
     let provider = CssProvider::new();
     let _ = provider.load_from_data("window, .background { background-color: transparent; }");
     if let Some(display) = gdk::Display::default() {
@@ -52,54 +54,211 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         );
     }
     
-    // Layer Shell konfiguracja przez trait
     win.init_layer_shell();
     win.set_layer(gls::Layer::Top);
     win.set_anchor(gls::Edge::Top, true);
     win.set_anchor(gls::Edge::Left, true);
     win.set_anchor(gls::Edge::Right, true);
     win.auto_exclusive_zone_enable();
-    // Zmieniono nazwę i enum w gtk4-layer-shell 0.4
+
     win.set_keyboard_mode(KeyboardMode::OnDemand);
 
-    // Height drives the exclusive zone
-    win.set_size_request(-1, BAR_HEIGHT);
-    win.set_default_size(800, BAR_HEIGHT);
+    if gls::is_supported() {
+        eprintln!("[Aether] layer-shell supported: anchors Left+Right -> full width");
+        win.set_size_request(-1, BAR_HEIGHT);
+        if let Some(display) = gdk::Display::default() {
+            let monitors = display.monitors();
+            let width = (0..monitors.n_items())
+                .find_map(|i| monitors.item(i))
+                .and_then(|obj| obj.downcast::<gdk::Monitor>().ok())
+                .map(|m| m.geometry().width())
+                .unwrap_or(800);
+            win.set_default_size(width, BAR_HEIGHT);
+        } else {
+            win.set_default_size(800, BAR_HEIGHT);
+        }
+    } else {
+        eprintln!("[Aether] layer-shell NOT supported: using normal window fallback");
+        if let Some(display) = gdk::Display::default() {
+            let monitors = display.monitors();
+            let width = (0..monitors.n_items())
+                .find_map(|i| monitors.item(i))
+                .and_then(|obj| obj.downcast::<gdk::Monitor>().ok())
+                .map(|m| m.geometry().width())
+                .unwrap_or(800);
+            win.set_default_size(width, BAR_HEIGHT);
+        } else {
+            win.set_default_size(800, BAR_HEIGHT);
+        }
+    }
 
-    // Web UI (HTML/CSS/JS via WebKitGTK)
     let webview = WebView::new();
-    // Przezroczyste tło WebView
+
+    if let Some(settings) = webkit6::prelude::WebViewExt::settings(&webview) {
+        settings.set_enable_javascript(true);
+        settings.set_enable_developer_extras(true);
+    }
+
     let rgba = gdk::RGBA::new(0.0, 0.0, 0.0, 0.0);
     webview.set_background_color(&rgba);
     webview.set_hexpand(true);
     webview.set_vexpand(true);
 
-    // Load static/index.html
     let static_dir = find_static_dir();
+
+    let user_config_dir = glib::user_config_dir().join("aether");
+    let user_css_path = user_config_dir.join("style.css");
+    let mut user_css_exists = user_css_path.exists();
+
+    if !user_css_exists {
+        let default_css_path = static_dir.join("styles.css");
+        match fs::read_to_string(&default_css_path) {
+            Ok(default_css) => {
+                if let Err(e) = fs::create_dir_all(&user_config_dir) {
+                    eprintln!("[Aether] Could not create config directory: {}", e);
+                }
+                match fs::write(&user_css_path, default_css) {
+                    Ok(_) => {
+                        eprintln!("[Aether] Created default ~/.config/aether/style.css");
+                        user_css_exists = true;
+                    }
+                    Err(e) => eprintln!("[Aether] Could not save user style: {}", e),
+                }
+            }
+            Err(e) => eprintln!("[Aether] Could not read default CSS: {}", e),
+        }
+    }
+
+    let user_css_uri: String = File::for_path(&user_css_path).uri().to_string();
+
+    let user_config_json_path = user_config_dir.join("config.json");
+    if !user_config_json_path.exists() {
+        let default_cfg_path = static_dir.join("config.json");
+        match fs::read_to_string(&default_cfg_path) {
+            Ok(default_cfg) => {
+                if let Err(e) = fs::create_dir_all(&user_config_dir) {
+                    eprintln!("[Aether] Could not create config directory: {}", e);
+                }
+                if let Err(e) = fs::write(&user_config_json_path, default_cfg) {
+                    eprintln!("[Aether] Could not save user config: {}", e);
+                } else {
+                    eprintln!("[Aether] Created default ~/.config/aether/config.json");
+                }
+            }
+            Err(e) => eprintln!("[Aether] Could not read default config.json: {}", e),
+        }
+    }
+
+    let mut injected_config_json = String::from("{}");
+    if let Ok(cfg) = fs::read_to_string(&user_config_json_path) {
+        injected_config_json = cfg;
+    }
+
     let index_path = static_dir.join("index.html");
     let index_uri = File::for_path(&index_path).uri();
     eprintln!("[Aether] Loading URI: {}", index_uri);
+
+    {
+        let user_css_uri = user_css_uri.clone();
+        let user_css_exists_captured = user_css_exists;
+        let injected_config_json = injected_config_json.clone();
+        webview.connect_load_changed(move |wv, ev| {
+            eprintln!("[Aether] WebView load_changed: {:?}", ev);
+            if matches!(ev, webkit6::LoadEvent::Committed | webkit6::LoadEvent::Finished) {
+                if user_css_exists_captured {
+                    let js = format!(
+                        r#"(function(){{
+  try {{
+    const head = document.head || document.getElementsByTagName('head')[0];
+    Array.from(document.querySelectorAll("link[rel='stylesheet']")).forEach(l => l.remove());
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = '{}';
+    head.appendChild(link);
+  }} catch (e) {{
+    console.error('Inject CSS failed', e);
+  }}
+}})();"#,
+                        user_css_uri.replace('\'', "\\'")
+                    );
+                    wv.evaluate_javascript(
+                        &js,
+                        None::<&str>,
+                        None::<&str>,
+                        None::<&gtk4::gio::Cancellable>,
+                        |_| {},
+                    );
+                }
+
+                let js_cfg = format!(
+                    r#"(function(){{
+  try {{
+    window.AetherConfig = Object.freeze({});
+    window.dispatchEvent(new CustomEvent('config', {{ detail: window.AetherConfig }}));
+  }} catch (e) {{ console.error('Inject config failed', e); }}
+}})();"#,
+                    injected_config_json
+                );
+
+                wv.evaluate_javascript(
+                    &js_cfg,
+                    None::<&str>,
+                    None::<&str>,
+                    None::<&gtk4::gio::Cancellable>,
+                    |_| {},
+                );
+            }
+        });
+    }
+
     webview.load_uri(&index_uri);
 
-    // Loguj etapy ładowania i ewentualne błędy
-    webview.connect_load_changed(|_wv, ev| {
-        eprintln!("[Aether] WebView load_changed: {:?}", ev);
-    });
-    webview.connect_load_failed(|_wv, ev, _failing_uri, error| {
-        eprintln!("[Aether] WebView load_failed at {:?}: {}", ev, error);
-        false
-    });
-
-    // Example: send a clock tick into the web UI every second
     {
         let webview = webview.clone();
-        glib::timeout_add_seconds_local(1, move || {
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
             let now = chrono::Local::now().format("%H:%M:%S").to_string();
+            
+            let client_data = match Client::get_active() {
+                Ok(Some(client)) => format!("{:?}", client),
+                Ok(None) => "".to_string(),
+                Err(e) => format!("Error: {:?}", e),
+            };
+
+            let battery_state = {
+                let manager = BatteryManager::new();
+                match manager {
+                    Ok(m) => {
+                        let batteries = m.batteries();
+                        match batteries {
+                            Ok(mut iter) => {
+                                if let Some(Ok(battery)) = iter.next() {
+                                    format!("{:.0}%", battery.state_of_charge().value * 100.)
+                                } else {
+                                    "No Battery".to_string()
+                                }
+                            }
+                            Err(e) => format!("Error: {:?}", e),
+                        }
+                    }
+                    Err(e) => format!("Error: {:?}", e),
+                }
+            };
+
             let js = format!(
-                "window.dispatchEvent(new CustomEvent('tick', {{ detail: {{ time: '{}' }} }}));",
-                now.replace('\'', "\\'")
+                "window.dispatchEvent(new CustomEvent('tick', 
+                {{ 
+                    detail: {{ 
+                        time: '{}' ,
+                        client: '{}',
+                        battery: '{}'
+                    }} 
+                }}));",
+                now.replace('\'', "\\'"),
+                client_data.replace('\'', "\\'"),
+                battery_state.replace('\'', "\\'")
             );
-            // webkit6 0.4: evaluate_javascript(script, world_name, source_uri, cancellable, callback)
+            
             webview.evaluate_javascript(
                 &js,
                 None::<&str>,

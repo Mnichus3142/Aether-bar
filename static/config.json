@@ -1,0 +1,6 @@
+{
+  "clock": {
+    "position": "center",
+    "format": "⏰ {HH:mm:ss}"
+  }
+}

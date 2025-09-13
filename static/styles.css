@@ -20,6 +20,6 @@ html, body, .bar, .bar * {
 
 .bar {
   height: var(--bar-height);
-  width: 100vw;
+  width: 50vw;
   background: transparent;
 }
