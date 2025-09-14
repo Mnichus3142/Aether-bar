@@ -53,7 +53,26 @@ window.addEventListener('tick', (e) => {
     if ('cpu_usage' in detail) updateCPU();
     if ('memory_usage' in detail) updateMemory();
     if ('disk_usage' in detail) updateDisk();
+    if ('brightness' in detail) updateBrightness();
 });
+
+const updateBrightness = () => {
+    const el = slots.brightness;
+    if (!el) return;
+
+    const lvl = parseInt(String(systemDetails.brightness).replace('%', ''), 10) || 0;
+
+    let iconName = 'wb_sunny';
+    if (lvl < 20) iconName = 'brightness_low';
+    else if (lvl < 40) iconName = 'brightness_5';
+    else if (lvl < 60) iconName = 'brightness_medium';
+    else if (lvl < 80) iconName = 'brightness_high';
+    else iconName = 'brightness_7';
+
+    const iconHtml = `<span class="material-icons-round">` + iconName + `</span>`;
+
+    el.innerHTML = "<div class='brightness'>" + iconHtml + " " + systemDetails.brightness + "</div>";
+}
 
 const updateDisk = () => {
     const el = slots.disk;
@@ -149,9 +168,6 @@ const updateBattery = () => {
     const el = slots.battery;
     if (!el) return;
 
-    const fmt = String(elementProperties?.battery?.format ?? '{}');
-    const temp = fmt.split("{}");
-
     const level = Number.parseInt(String(systemDetails.battery), 10);
 
     let status = '';
@@ -160,16 +176,16 @@ const updateBattery = () => {
             status = "⚡ ";
             break;
         default:
-            if (Number.isFinite(level) && level <= 10) {
+            if (level <= 10) {
                 status = " ";
             }
-            else if (Number.isFinite(level) && level <= 25) {
+            else if (level <= 25) {
                 status = " ";
             }
-            else if (Number.isFinite(level) && level <= 50) {
+            else if (level <= 50) {
                 status = " ";
             }
-            else if (Number.isFinite(level) && level <= 75) {
+            else if (level <= 75) {
                 status = " ";
             }
             else {
@@ -178,5 +194,5 @@ const updateBattery = () => {
             break;
     }
 
-    el.innerHTML = "<div class='battery'>" + (temp[0] ?? '') + status + systemDetails.battery + (temp[1] ?? '') + "</div>";
+    el.innerHTML = "<div class='battery'>" + status + systemDetails.battery + "</div>";
 }

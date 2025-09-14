@@ -38,6 +38,33 @@ fn find_static_dir() -> PathBuf {
     }
 }
 
+fn read_brightness_percent() -> Option<i32> {
+    let dir = Path::new("/sys/class/backlight");
+    let entries = std::fs::read_dir(dir).ok()?;
+
+    let mut chosen: Option<PathBuf> = None;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let path = entry.path();
+        if name.contains("intel") || name.contains("amdgpu") || name.contains("nvidia") {
+            chosen = Some(path);
+            break;
+        }
+        if chosen.is_none() {
+            chosen = Some(path);
+        }
+    }
+
+    let base = chosen?;
+    let cur = std::fs::read_to_string(base.join("brightness")).ok()?;
+    let max = std::fs::read_to_string(base.join("max_brightness")).ok()?;
+    let cur: u64 = cur.trim().parse().ok()?;
+    let max: u64 = max.trim().parse().ok()?;
+    if max == 0 { return None; }
+    let pct = ((cur as f64 / max as f64) * 100.0).round() as i32;
+    Some(pct.clamp(0, 100))
+}
+
 fn build_bar(app: &Application) -> ApplicationWindow {
     let win = ApplicationWindow::builder()
         .application(app)
@@ -172,7 +199,6 @@ fn build_bar(app: &Application) -> ApplicationWindow {
                         r#"(function(){{
   try {{
     const head = document.head || document.getElementsByTagName('head')[0];
-    Array.from(document.querySelectorAll("link[rel='stylesheet']")).forEach(l => l.remove());
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.type = 'text/css';
@@ -228,7 +254,8 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         let mut last_workspaces = String::new();
         let mut last_cpu_util = 0;
         let mut last_memory_used = 0;
-        let mut last_disk_usage: i32 = -1;
+        let mut last_disk_usage: i32 = 0;
+        let mut last_brightness: i32 = 0;
 
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
             let now_time = chrono::Local::now().format("%H:%M:%S").to_string();
@@ -238,7 +265,13 @@ fn build_bar(app: &Application) -> ApplicationWindow {
                 last_time = now_time;
             }
 
-            
+            if let Some(pct) = read_brightness_percent() {
+                if pct != last_brightness {
+                    updates.push(format!("brightness: '{}%'", pct));
+                    last_brightness = pct;
+                }
+            }
+
             let machine_status = machine.system_status().unwrap();
             let cpu_usage = machine_status.cpu;
             let memory_usage = machine_status.memory;
@@ -272,9 +305,7 @@ fn build_bar(app: &Application) -> ApplicationWindow {
                 }
                 Err(_) => -1,
             };
-
-            println!("Disk usage: {}%", disk_usage_pct);
-
+            
             if disk_usage_pct >= 0 && disk_usage_pct != last_disk_usage {
                 updates.push(format!("disk_usage: '{}%'", disk_usage_pct));
                 last_disk_usage = disk_usage_pct;
