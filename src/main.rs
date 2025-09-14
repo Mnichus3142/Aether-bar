@@ -16,6 +16,9 @@ use webkit6::WebView;
 use hyprland::data::{Client, Workspace, Workspaces};
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 use battery::Manager as BatteryManager;
+use machine_info::Machine;
+use nix::sys::statvfs::statvfs;
+use std::path::Path;
 
 const APP_ID: &str = "dev.example.aether";
 const BAR_HEIGHT: i32 = 32;
@@ -214,6 +217,8 @@ fn build_bar(app: &Application) -> ApplicationWindow {
     webview.load_uri(&index_uri);
 
     {
+        let mut machine = Machine::new();
+
         let webview = webview.clone();
         let mut last_time = String::new();
         let mut last_client = String::new();
@@ -221,6 +226,9 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         let mut last_battery_state = String::new();
         let mut last_workspace = String::new();
         let mut last_workspaces = String::new();
+        let mut last_cpu_util = 0;
+        let mut last_memory_used = 0;
+        let mut last_disk_usage: i32 = -1;
 
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
             let now_time = chrono::Local::now().format("%H:%M:%S").to_string();
@@ -228,6 +236,48 @@ fn build_bar(app: &Application) -> ApplicationWindow {
             if now_time != last_time {
                 updates.push(format!("time: '{}'", now_time.replace('\'', "\\'")));
                 last_time = now_time;
+            }
+
+            
+            let machine_status = machine.system_status().unwrap();
+            let cpu_usage = machine_status.cpu;
+            let memory_usage = machine_status.memory;
+
+            let machine_info = machine.system_info();
+
+            let total_memory = machine_info.memory as f64 * (10f64.powi(-9));
+            let used_memory = memory_usage as f64 * (10f64.powi(-6));
+            let memory_percentage = (used_memory / total_memory * 100.0).round() as i32;
+
+            if memory_percentage != last_memory_used {
+                updates.push(format!("memory_usage: '{}%'", memory_percentage));
+                last_memory_used = memory_percentage;
+            }
+
+            if cpu_usage != last_cpu_util {
+                updates.push(format!("cpu_usage: '{}%'", cpu_usage));
+                last_cpu_util = cpu_usage;
+            }
+
+            let disk_usage_pct: i32 = match statvfs(Path::new("/")) {
+                Ok(s) => {
+                    let bsize = s.block_size() as u64;
+                    let total = s.blocks() * bsize;
+                    let avail = s.blocks_available() * bsize;
+                    if total == 0 {
+                        0
+                    } else {
+                        (((total - avail) as f64 / total as f64) * 100.0).round() as i32
+                    }
+                }
+                Err(_) => -1,
+            };
+
+            println!("Disk usage: {}%", disk_usage_pct);
+
+            if disk_usage_pct >= 0 && disk_usage_pct != last_disk_usage {
+                updates.push(format!("disk_usage: '{}%'", disk_usage_pct));
+                last_disk_usage = disk_usage_pct;
             }
 
             let client_data = match Client::get_active() {

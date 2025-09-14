@@ -50,7 +50,31 @@ window.addEventListener('tick', (e) => {
     if ('client' in detail) updateActiveClient();
     if ('battery' in detail || 'battery_state' in detail) updateBattery();
     if ('workspace' in detail || 'workspaces' in detail) updateWorkspace();
+    if ('cpu_usage' in detail) updateCPU();
+    if ('memory_usage' in detail) updateMemory();
+    if ('disk_usage' in detail) updateDisk();
 });
+
+const updateDisk = () => {
+    const el = slots.disk;
+    if (!el) return;
+
+    el.innerHTML = "<div class='disk'>" + systemDetails.disk_usage + "  </div>";
+}
+
+const updateCPU = () => {
+    const el = slots.cpu;
+    if (!el) return;
+
+    el.innerHTML = "<div class='cpu'>" + systemDetails.cpu_usage + "  </div>";
+}
+
+const updateMemory = () => {
+    const el = slots.memory;
+    if (!el) return;
+    
+    el.innerHTML = "<div class='memory'>" + systemDetails.memory_usage + "  </div>";
+}
 
 const updateWorkspace = () => {
     const el = slots.workspace;
