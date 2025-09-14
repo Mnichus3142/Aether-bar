@@ -1,6 +1,6 @@
 use anyhow::Result;
 use gio::prelude::*;
-use gtk4::prelude::*;
+use gtk4::{prelude::*};
 use gtk4::prelude::{ApplicationExt, ApplicationExtManual};
 use gtk4::{Application, ApplicationWindow};
 use gtk4::CssProvider;
@@ -13,10 +13,9 @@ use gio::File;
 use std::fs;
 use webkit6::prelude::*;
 use webkit6::WebView;
-use hyprland::data::{Animations, Binds, Client, Clients, Monitor, Monitors, Workspace, Workspaces};
+use hyprland::data::{Client, Workspace, Workspaces};
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 use battery::Manager as BatteryManager;
-use battery::Battery as BatteryDevice;
 
 const APP_ID: &str = "dev.example.aether";
 const BAR_HEIGHT: i32 = 32;
@@ -216,56 +215,103 @@ fn build_bar(app: &Application) -> ApplicationWindow {
 
     {
         let webview = webview.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            let now = chrono::Local::now().format("%H:%M:%S").to_string();
-            
+        let mut last_time = String::new();
+        let mut last_client = String::new();
+        let mut last_battery = String::new();
+        let mut last_battery_state = String::new();
+        let mut last_workspace = String::new();
+        let mut last_workspaces = String::new();
+
+        glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+            let now_time = chrono::Local::now().format("%H:%M:%S").to_string();
+            let mut updates: Vec<String> = Vec::new();
+            if now_time != last_time {
+                updates.push(format!("time: '{}'", now_time.replace('\'', "\\'")));
+                last_time = now_time;
+            }
+
             let client_data = match Client::get_active() {
-                Ok(Some(client)) => format!("{:?}", client),
-                Ok(None) => "".to_string(),
+                Ok(opt) => {
+                    if let Some(client) = opt {
+                        format!("{:?}", client)
+                    } else {
+                        String::new()
+                    }
+                }
                 Err(e) => format!("Error: {:?}", e),
             };
 
-            let battery_state = {
+            if client_data != last_client {
+                updates.push(format!("client: '{}'", client_data.replace('\'', "\\'")));
+                last_client = client_data;
+            }
+
+            let workspace = match Workspace::get_active() {
+                Ok(ws) => format!("{:?}", ws),
+                Err(e) => format!("Error: {:?}", e),
+            };
+            
+            let workspaces = match Workspaces::get() {
+                Ok(ws) => format!("{:?}", ws),
+                Err(e) => format!("Error: {:?}", e),
+            };
+
+            if workspace != last_workspace || workspaces != last_workspaces {
+                updates.push(format!("workspace: '{}'", workspace.replace('\'', "\\'")));
+                updates.push(format!("workspaces: '{}'", workspaces.replace('\'', "\\'")));
+                last_workspace = workspace;
+                last_workspaces = workspaces;
+            }
+
+            let (battery_percent, battery_state_text) = {
                 let manager = BatteryManager::new();
                 match manager {
                     Ok(m) => {
-                        let batteries = m.batteries();
-                        match batteries {
+                        let batteries_result = m.batteries();
+                        match batteries_result {
                             Ok(mut iter) => {
                                 if let Some(Ok(battery)) = iter.next() {
-                                    format!("{:.0}%", battery.state_of_charge().value * 100.)
+                                    (
+                                        format!("{:.0}%", battery.state_of_charge().value * 100.0),
+                                        format!("{:?}", battery.state()),
+                                    )
                                 } else {
-                                    "No Battery".to_string()
+                                    ("No Battery".to_string(), "Unknown".to_string())
                                 }
-                            }
-                            Err(e) => format!("Error: {:?}", e),
+                            },
+                            Err(e) => {
+                                ("Error".to_string(), format!("Error: {:?}", e))
+                            },
                         }
                     }
-                    Err(e) => format!("Error: {:?}", e),
+                    Err(e) => ("Error".to_string(), format!("Error: {:?}", e)),
                 }
             };
 
-            let js = format!(
-                "window.dispatchEvent(new CustomEvent('tick', 
-                {{ 
-                    detail: {{ 
-                        time: '{}' ,
-                        client: '{}',
-                        battery: '{}'
-                    }} 
-                }}));",
-                now.replace('\'', "\\'"),
-                client_data.replace('\'', "\\'"),
-                battery_state.replace('\'', "\\'")
-            );
-            
-            webview.evaluate_javascript(
-                &js,
-                None::<&str>,
-                None::<&str>,
-                None::<&gtk4::gio::Cancellable>,
-                |_| {},
-            );
+            if battery_percent != last_battery {
+                updates.push(format!("battery: '{}'", battery_percent.replace('\'', "\\'")));
+                last_battery = battery_percent;
+            }
+            if battery_state_text != last_battery_state {
+                updates.push(format!("battery_state: '{}'", battery_state_text.replace('\'', "\\'")));
+                last_battery_state = battery_state_text;
+            }
+
+            if !updates.is_empty() {
+                let payload = updates.join(", ");
+                let js = format!(
+                    "window.dispatchEvent(new CustomEvent('tick', {{ detail: {{ {} }} }}));",
+                    payload
+                );
+                webview.evaluate_javascript(
+                    &js,
+                    None::<&str>,
+                    None::<&str>,
+                    None::<&gtk4::gio::Cancellable>,
+                    |_| {},
+                );
+            }
+
             glib::ControlFlow::Continue
         });
     }

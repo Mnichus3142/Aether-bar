@@ -1,6 +1,13 @@
 {
   "clock": {
-    "position": "center",
-    "format": "⏰ {HH:mm:ss}"
+    "position": "right",
+	"format": "{hh:mm}"
+  },
+  "battery": {
+	"position": "right",
+	"format": "{}"
+  },
+  "activeWindow": {
+	"position": "center"
   }
 }

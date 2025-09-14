@@ -1,6 +1,9 @@
 let elementProperties = {}
 let systemDetails = {}
 
+let containers = {}
+let slots = {}
+
 let clock;
 let activeWindow;
 let battery;
@@ -8,21 +11,70 @@ let battery;
 window.addEventListener('config', (e) => {
     elementProperties = e.detail || window.AetherConfig || {};
 
-    clock = document.getElementById(elementProperties.clock.position);
-    activeWindow = document.getElementById(elementProperties.activeWindow.position);
-    battery = document.getElementById(elementProperties.battery.position);
+    containers.left = document.getElementById('left');
+    containers.center = document.getElementById('center');
+    containers.right = document.getElementById('right');
+
+    for (const pos of ['left', 'center', 'right']) {
+        const el = containers[pos];
+        if (el) Array.from(el.querySelectorAll('.slot, .spacer')).forEach(n => n.remove());
+    }
+
+    slots = {};
+    const appendedCount = { left: 0, center: 0, right: 0 };
+    for (const [name, cfg] of Object.entries(elementProperties)) {
+        if (!cfg || typeof cfg !== 'object') continue;
+        const pos = String(cfg.position || 'right').toLowerCase();
+        const posKey = (pos === 'left' || pos === 'center' || pos === 'right') ? pos : 'right';
+        const parent = containers[posKey] || containers.right;
+        if (!parent) continue;
+        const node = document.createElement('div');
+        node.id = `slot-${name}`;
+        node.className = `slot slot-${name}`;
+        if (appendedCount[posKey] > 0) {
+            const spacer = document.createElement('div');
+            spacer.className = 'spacer';
+            parent.appendChild(spacer);
+        }
+        parent.appendChild(node);
+        appendedCount[posKey]++;
+        slots[name] = node;
+    }
 });
 
 window.addEventListener('tick', (e) => {
-    systemDetails = e.detail || {};
+    const detail = e.detail || {};
+    systemDetails = { ...systemDetails, ...detail };
 
-    updateClock();
-    updateActiveClient();
-    updateBattery();
+    if ('time' in detail) updateClock();
+    if ('client' in detail) updateActiveClient();
+    if ('battery' in detail || 'battery_state' in detail) updateBattery();
+    if ('workspace' in detail || 'workspaces' in detail) updateWorkspace();
 });
 
+const updateWorkspace = () => {
+    const el = slots.workspace;
+    if (!el) return;
+
+    const active = Number(systemDetails.workspace.split(",")[0].replace("Workspace { id: ", ""));
+
+    const all = systemDetails.workspaces.split("monitor_id").length - 1;
+
+    let allStr = "";
+    for (let i = 1; i <= all; i++) {
+        if (i === active) {
+            allStr += `<span class="active"> </span> `;
+        } else {
+            allStr += `<span class="notActive"> </span> `;
+        }
+    }
+    
+    el.innerHTML = "<div class='workspaces'>" + allStr + "</div>";
+}
+
 const updateClock = () => {
-    if (!clock) return;
+    const el = slots.clock;
+    if (!el) return;
 
     const tpl = elementProperties?.clock?.format || '{HH:mm:ss}';
     const match = tpl.match(/\{([^}]*)\}/);
@@ -56,16 +108,51 @@ const updateClock = () => {
         formatted += ` ${A}`;
     }
 
-    clock.innerHTML = "<div class='clock'>" + `${prefix || ''}${formatted}${suffix || ''}` + "</div>";
+    el.innerHTML = "<div class='clock'>" + `${prefix || ''}${formatted}${suffix || ''}` + "</div>";
 }
 
 const updateActiveClient = () => {
+    const el = slots.activeWindow;
+    if (!el) return;
+
     let temp = String(systemDetails.client).split("class")[1];
     let temp2 = String(systemDetails.client).replace("initial_title", "initial").split("title")[1];
 
-    activeWindow.innerHTML = "<div class='activeWindow'>" + temp2.split("pid")[0].replaceAll('",', '').replace(': "', "").trim() + " | " + temp.replaceAll('",', '').replace(': "', "").trim() + "</div>";
+    el.innerHTML = "<div class='activeWindow'>" + temp2.split("pid")[0].replaceAll('",', '').replace(': "', "").trim() + " | " + temp.replaceAll('",', '').replace(': "', "").trim() + "</div>";
 }
 
 const updateBattery = () => {
-    battery.innerHTML = "<div class='battery'>" + systemDetails.battery + "</div>";
+    const el = slots.battery;
+    if (!el) return;
+
+    const fmt = String(elementProperties?.battery?.format ?? '{}');
+    const temp = fmt.split("{}");
+
+    const level = Number.parseInt(String(systemDetails.battery), 10);
+
+    let status = '';
+    switch (systemDetails.battery_state) {
+        case "Charging":
+            status = "⚡ ";
+            break;
+        default:
+            if (Number.isFinite(level) && level <= 10) {
+                status = " ";
+            }
+            else if (Number.isFinite(level) && level <= 25) {
+                status = " ";
+            }
+            else if (Number.isFinite(level) && level <= 50) {
+                status = " ";
+            }
+            else if (Number.isFinite(level) && level <= 75) {
+                status = " ";
+            }
+            else {
+                status = " ";
+            }
+            break;
+    }
+
+    el.innerHTML = "<div class='battery'>" + (temp[0] ?? '') + status + systemDetails.battery + (temp[1] ?? '') + "</div>";
 }
