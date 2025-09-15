@@ -170,29 +170,24 @@ const updateBattery = () => {
 
     const level = Number.parseInt(String(systemDetails.battery), 10);
 
-    let status = '';
+    let iconName = '';
     switch (systemDetails.battery_state) {
         case "Charging":
-            status = "⚡ ";
+            if (level <= 60) iconName = 'battery_android_bolt'
+            else iconName = 'battery_android_frame_bolt'
+
             break;
         default:
-            if (level <= 10) {
-                status = " ";
-            }
-            else if (level <= 25) {
-                status = " ";
-            }
-            else if (level <= 50) {
-                status = " ";
-            }
-            else if (level <= 75) {
-                status = " ";
-            }
-            else {
-                status = " ";
-            }
+            if (level <= 10) iconName = 'battery_android_alert'
+            else if (level <= 25) iconName = 'battery_android_frame_3'
+            else if (level <= 50) iconName = 'battery_android_frame_4'
+            else if (level <= 75) iconName = 'battery_android_frame_5'
+            else if (level <= 90) iconName = 'battery_android_frame_6'
+            else iconName = 'battery_android_frame_full'
             break;
     }
 
-    el.innerHTML = "<div class='battery'>" + status + systemDetails.battery + "</div>";
+    const iconHtml = `<span class="material-symbols-outlined">` + iconName + `</span>`;
+
+    el.innerHTML = "<div class='battery'>" + iconHtml + " "+ systemDetails.battery + "</div>";
 }
