@@ -18,6 +18,21 @@ Here you have screenshot of my setup.
 
 Config should automatically be created in ```.config/Aether``` and that config is prefered, so if you want to change something feel free to do it there.
 
-You are able to delete every component and move it from container to container and change clock format. You can delete hours, minutes or seconds and change clock format from 12-hour to 24-hour changing hh to HH.
+You are able to delete every component and move it from container to container and change clock format. You can delete hours, minutes or seconds and change clock format from 12-hour to 24-hour changing hh to HH
+
+To build an app everything you need is 
+
+```
+git clone https://github.com/Mnichus3142/Aether
+cd Aether
+cargo build --release
+cp -r static target/release/static
+```
+
+Then run an app
+
+```
+./target/release/Aether
+```
 
 Made with ❤️ by [Mnichus3142](https://github.com/Mnichus3142)
