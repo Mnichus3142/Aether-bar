@@ -13,8 +13,7 @@
     "format": "{}"
   },
   "clock": {
-    "position": "right",
-    "format": "{hh:mm}"
+    "position": "right"
   },
   "activeWindow": {
     "position": "center"
