@@ -141,21 +141,21 @@ const updateDisk = () => {
     const el = slots.disk;
     if (!el) return;
 
-    el.innerHTML = "<div class='disk'>" + systemDetails.disk_usage + ' <span class="material-symbols-outlined diskIcon">' + 'hard_disk' + `</span>` + " </div>";
+    el.innerHTML = "<div class='disk'>" + ' <span class="material-symbols-outlined diskIcon">' + 'hard_disk' + `</span>` + `<a>${systemDetails.disk_usage}</a>` + " </div>";
 }
 
 const updateCPU = () => {
     const el = slots.cpu;
     if (!el) return;
 
-    el.innerHTML = "<div class='cpu'>" + systemDetails.cpu_usage + ' <span class="material-symbols-outlined cpuIcon">' + 'memory' + `</span>` + " </div>";
+    el.innerHTML = "<div class='cpu'>" + ' <span class="material-symbols-outlined cpuIcon">' + 'memory' + `</span>`+ `<a>${systemDetails.cpu_usage}</a>` + " </div>";
 }
 
 const updateMemory = () => {
     const el = slots.memory;
     if (!el) return;
-    
-    el.innerHTML = "<div class='memory'>" + systemDetails.memory_usage + ' <span class="material-symbols-outlined cpuIcon">' + 'memory_alt' + `</span>` + " </div>";
+
+    el.innerHTML = "<div class='memory'>" + ' <span class="material-symbols-outlined cpuIcon">' + 'memory_alt' + `</span>` + `<a>${systemDetails.memory_usage}</a>` + " </div>";
 }
 
 const updateWorkspace = () => {

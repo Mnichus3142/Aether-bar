@@ -22,7 +22,7 @@ use std::path::Path;
 use std::process::Command;
 
 const APP_ID: &str = "dev.example.aether";
-const BAR_HEIGHT: i32 = 32;
+const BAR_HEIGHT: i32 = 42;
 
 fn find_static_dir() -> PathBuf {
     #[cfg(debug_assertions)]
@@ -448,6 +448,7 @@ fn build_bar(app: &Application) -> ApplicationWindow {
                 updates.push(format!("battery: '{}'", battery_percent.replace('\'', "\\'")));
                 last_battery = battery_percent;
             }
+
             if battery_state_text != last_battery_state {
                 updates.push(format!("battery_state: '{}'", battery_state_text.replace('\'', "\\'")));
                 last_battery_state = battery_state_text;
