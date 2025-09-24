@@ -54,7 +54,70 @@ window.addEventListener('tick', (e) => {
     if ('memory_usage' in detail) updateMemory();
     if ('disk_usage' in detail) updateDisk();
     if ('brightness' in detail) updateBrightness();
+    if ('network_online' in detail || 'network_type' in detail || 'network_kind' in detail || 'wifi_signal' in detail) updateNetwork();
+    if ('audio_volume' in detail || 'audio_muted' in detail) updateAudio();
 });
+
+const updateAudio = () => {
+    const el = slots.volume;
+    if (!el) return;
+
+    const volRaw = systemDetails.audio_volume;
+    let vol = parseInt(String(volRaw).replace('%',''), 10);
+    const muted = systemDetails.audio_muted;
+
+    let icon = '';
+    if (muted === 'true') {
+        icon = 'volume_off';
+        vol = '';
+    }
+    else {
+        if (vol <= 33) icon = 'volume_mute';
+        else if (vol <= 66) icon = 'volume_down';
+        else icon = 'volume_up';
+        vol = ` ${vol}%`;
+    }
+
+    const iconHtml = `<span class="material-symbols-outlined volumeIcon">${icon}</span>`;
+    el.innerHTML = "<div class='volume'>" + iconHtml + vol + "</div>";
+};
+
+const updateNetwork = () => {
+    const el = slots.network;
+    if (!el) return;
+
+    const online = systemDetails.network_online;
+    const kind = systemDetails.network_type.toLowerCase();
+    const wifi = kind;
+    const sigRaw = systemDetails.wifi_signal || '';
+    let sig = parseInt(String(sigRaw).replace('%','').trim(), 10);
+
+    let icon = '';
+    if (online === 'false') {
+        icon = 'signal_wifi_off';
+    }
+    else {
+        if (kind == 'wifi') {
+            if (sig < 10) icon = 'signal_wifi_0_bar'
+            else if (sig < 25) icon = 'network_wifi_1_bar'
+            else if (sig < 50) icon = 'network_wifi_2_bar'
+            else if (sig < 75) icon = 'network_wifi_3_bar'
+            else if (sig < 90) icon = 'network_wifi'
+            else icon = 'signal_wifi_4_bar'
+        }
+        else icon = 'lan'
+    }
+
+    if (isNaN(sig)) sig = '';
+    else sig = ` ${sig}%`
+
+    let internetIcon = '';
+    if (icon == 'lan') internetIcon = 'lan'
+    else internetIcon = 'wifi'
+
+    const iconHtml = `<span class="material-symbols-outlined ${internetIcon}">` + icon + `</span>`;
+    el.innerHTML = "<div class='network'>" + iconHtml + sig + "</div>";
+};
 
 const updateBrightness = () => {
     const el = slots.brightness;
@@ -78,21 +141,21 @@ const updateDisk = () => {
     const el = slots.disk;
     if (!el) return;
 
-    el.innerHTML = "<div class='disk'>" + systemDetails.disk_usage + "  </div>";
+    el.innerHTML = "<div class='disk'>" + systemDetails.disk_usage + ' <span class="material-symbols-outlined diskIcon">' + 'hard_disk' + `</span>` + " </div>";
 }
 
 const updateCPU = () => {
     const el = slots.cpu;
     if (!el) return;
 
-    el.innerHTML = "<div class='cpu'>" + systemDetails.cpu_usage + "  </div>";
+    el.innerHTML = "<div class='cpu'>" + systemDetails.cpu_usage + ' <span class="material-symbols-outlined cpuIcon">' + 'memory' + `</span>` + " </div>";
 }
 
 const updateMemory = () => {
     const el = slots.memory;
     if (!el) return;
     
-    el.innerHTML = "<div class='memory'>" + systemDetails.memory_usage + "  </div>";
+    el.innerHTML = "<div class='memory'>" + systemDetails.memory_usage + ' <span class="material-symbols-outlined cpuIcon">' + 'memory_alt' + `</span>` + " </div>";
 }
 
 const updateWorkspace = () => {
@@ -106,9 +169,9 @@ const updateWorkspace = () => {
     let allStr = "";
     for (let i = 1; i <= all; i++) {
         if (i === active) {
-            allStr += `<span class="active"> </span> `;
+            allStr += `<span class="active material-symbols-outlined">mode_standby</span> `;
         } else {
-            allStr += `<span class="notActive"> </span> `;
+            allStr += `<span class="notActive material-symbols-outlined">fiber_manual_record</span> `;
         }
     }
     
@@ -171,23 +234,28 @@ const updateBattery = () => {
     const level = Number.parseInt(String(systemDetails.battery), 10);
 
     let iconName = '';
+    let stateClass = '';
     switch (systemDetails.battery_state) {
         case "Charging":
-            if (level <= 60) iconName = 'battery_android_bolt'
-            else iconName = 'battery_android_frame_bolt'
+            iconName = 'battery_android_bolt';
 
+            stateClass = 'charging';
             break;
         default:
-            if (level <= 10) iconName = 'battery_android_alert'
-            else if (level <= 25) iconName = 'battery_android_frame_3'
-            else if (level <= 50) iconName = 'battery_android_frame_4'
-            else if (level <= 75) iconName = 'battery_android_frame_5'
-            else if (level <= 90) iconName = 'battery_android_frame_6'
-            else iconName = 'battery_android_frame_full'
+            if (level < 13) iconName = 'battery_android_0';
+            else if (level < 26) iconName = 'battery_android_1';
+            else if (level < 38) iconName = 'battery_android_2';
+            else if (level < 50) iconName = 'battery_android_3';
+            else if (level < 63) iconName = 'battery_android_4';
+            else if (level < 75) iconName = 'battery_android_5';
+            else if (level < 88) iconName = 'battery_android_6';
+            else iconName = 'battery_android_full';
+
+            stateClass = 'discharging';
             break;
     }
 
-    const iconHtml = `<span class="material-symbols-outlined">` + iconName + `</span>`;
+    const iconHtml = `<span class="material-symbols-outlined ${stateClass}">` + iconName + `</span>`;
 
-    el.innerHTML = "<div class='battery'>" + iconHtml + " "+ systemDetails.battery + "</div>";
+    el.innerHTML = "<div class='battery'>" + iconHtml + " " + systemDetails.battery + "</div>";
 }

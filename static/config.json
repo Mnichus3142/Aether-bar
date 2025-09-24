@@ -1,13 +1,34 @@
 {
-  "clock": {
-    "position": "right",
-	"format": "{hh:mm}"
+  "volume": {
+    "position": "right"
+  },
+  "network": {
+    "position": "right"
+  },
+  "brightness": {
+    "position": "right"
   },
   "battery": {
-	"position": "right",
-	"format": "{}"
+    "position": "right",
+    "format": "{}"
+  },
+  "clock": {
+    "position": "right",
+    "format": "{hh:mm}"
   },
   "activeWindow": {
-	"position": "center"
+    "position": "center"
+  },
+  "cpu": {
+    "position": "left"
+  },
+  "memory": {
+    "position": "left"
+  },
+  "disk": {
+    "position": "left"
+  },
+  "workspace": {
+    "position": "left"
   }
 }

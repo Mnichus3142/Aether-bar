@@ -1,5 +1,10 @@
 :root {
   --bar-height: 32px;
+  --font-size: 12px;
+}
+
+* {
+	font-family: "JetBrains Mono";
 }
 
 html, body {
@@ -8,7 +13,11 @@ html, body {
 }
 
 body {
-  background: transparent;
+	background: transparent;
+	height: var(--bar-height);
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
 }
 
 html, body, .bar, .bar * {
@@ -18,8 +27,118 @@ html, body, .bar, .bar * {
   user-select: none;
 }
 
-.bar {
-  height: var(--bar-height);
-  width: 50vw;
-  background: transparent;
+.left, .center, .right {
+	color: white;
+	font-size: var(--font-size);
+	display: flex;
+	align-items: center;
+	width: fit-content;
+}
+
+.left {
+	justify-content: left;
+	width: 33%;
+}
+
+.center {
+	justify-content: center;
+	width: 34%;
+}
+
+.right {
+	justify-content: right;
+	width: 33%;
+}
+
+.spacer {
+	width: 4px;
+}
+
+.activeWindow {
+	
+}
+
+.clock {
+
+}
+
+.battery {
+	position: relative;
+	top: -2px;
+}
+
+.workspaces {
+
+}
+
+.active, .notActive {
+	position: relative;
+	top: 2px;
+}
+
+.active {
+
+}
+
+.notActive {
+
+}
+
+.brightness {
+	
+}
+
+.material-icons-round {
+	font-size: var(--font-size);
+	position: relative;
+	top: 1px;
+}
+
+.material-symbols-outlined {
+	font-size: calc(var(--font-size) + 4px);
+	position: relative;
+}
+
+.charging {
+	top: 4px;
+}
+
+.discharging {
+	top: 3px;
+}
+
+.wifi {
+	font-size: var(--font-size);
+	top: 1px;
+}
+
+.lan {
+	font-size: var(--font-size);
+	top: 1px;
+}
+
+.volumeIcon {
+	font-size: var(--font-size);
+	top: 2px;
+}
+
+.disk, .cpu, .memory {
+	font-size: var(--font-size);
+	position: relative;
+	top: -1px;
+}
+
+.diskIcon {
+	font-size: calc(var(--font-size) + 4px);
+	top: 3px;
+}
+
+.cpuIcon {
+	font-size: calc(var(--font-size) + 4px);
+	top: 3px;
+}
+
+.memoryIcon {
+	font-size: calc(var(--font-size) + 4px);
+	top: 3px;
 }

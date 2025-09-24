@@ -19,6 +19,7 @@ use battery::Manager as BatteryManager;
 use machine_info::Machine;
 use nix::sys::statvfs::statvfs;
 use std::path::Path;
+use std::process::Command;
 
 const APP_ID: &str = "dev.example.aether";
 const BAR_HEIGHT: i32 = 32;
@@ -63,6 +64,73 @@ fn read_brightness_percent() -> Option<i32> {
     if max == 0 { return None; }
     let pct = ((cur as f64 / max as f64) * 100.0).round() as i32;
     Some(pct.clamp(0, 100))
+}
+
+#[derive(Copy, Clone, PartialEq)]
+enum NetKind { Wifi, Eth, Other, None }
+
+fn net_default_iface() -> Option<String> {
+    let Ok(data) = std::fs::read_to_string("/proc/net/route") else { return None; };
+    for l in data.lines().skip(1) {
+        let cols: Vec<&str> = l.split_whitespace().collect();
+        if cols.len() > 2 && cols[1] == "00000000" { return Some(cols[0].to_string()); }
+    }
+    None
+}
+
+fn net_wireless_quality() -> std::collections::HashMap<String, f32> {
+    let mut m = std::collections::HashMap::new();
+    let Ok(c) = std::fs::read_to_string("/proc/net/wireless") else { return m; };
+    for line in c.lines().skip(2) {
+        if let Some(pos) = line.find(':') {
+            let iface = line[..pos].trim();
+            let rest = &line[pos+1..];
+            let p: Vec<&str> = rest.split_whitespace().collect();
+            if p.len() > 1 {
+                let q = p[1].trim_end_matches('.');
+                if let Ok(v) = q.parse::<f32>() { m.insert(iface.to_string(), v); }
+            }
+        }
+    }
+    m
+}
+
+fn net_status() -> (bool, NetKind, Option<i32>) {
+    let Some(iface) = net_default_iface() else { return (false, NetKind::None, None); };
+    let oper = std::fs::read_to_string(format!("/sys/class/net/{}/operstate", iface)).unwrap_or_default();
+    if oper.trim() != "up" && oper.trim() != "unknown" { return (false, NetKind::Other, None); }
+    let wifi_q = net_wireless_quality();
+    if wifi_q.contains_key(&iface) || std::path::Path::new(&format!("/sys/class/net/{}/wireless", iface)).exists() {
+        let pct = wifi_q.get(&iface).map(|q| ((*q / 70.0)*100.0).clamp(0.0,100.0).round() as i32);
+        return (true, NetKind::Wifi, pct);
+    }
+    let kind = std::fs::read_to_string(format!("/sys/class/net/{}/type", iface)).ok()
+        .and_then(|t| t.trim().parse::<i32>().ok())
+        .map(|t| if t==1 { NetKind::Eth } else { NetKind::Other })
+        .unwrap_or(NetKind::Other);
+    (true, kind, None)
+}
+
+fn read_audio_volume() -> Option<(i32, bool)> {
+    let vol_out = Command::new("pactl")
+        .args(["get-sink-volume", "@DEFAULT_SINK@"])        
+        .output().ok()?;
+    if !vol_out.status.success() { return None; }
+    let vol_text = String::from_utf8_lossy(&vol_out.stdout);
+    let mut pct: Option<i32> = None;
+    for part in vol_text.split_whitespace() {
+        if let Some(stripped) = part.strip_suffix('%') {
+            if let Ok(v) = stripped.parse::<i32>() { pct = Some(v); break; }
+        }
+    }
+    let pct = pct?;
+    let mute_out = Command::new("pactl")
+        .args(["get-sink-mute", "@DEFAULT_SINK@"])        
+        .output().ok()?;
+    if !mute_out.status.success() { return None; }
+    let mute_text = String::from_utf8_lossy(&mute_out.stdout).to_lowercase();
+    let muted = mute_text.contains("yes");
+    Some((pct.clamp(0,150), muted))
 }
 
 fn build_bar(app: &Application) -> ApplicationWindow {
@@ -257,6 +325,13 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         let mut last_disk_usage: i32 = 0;
         let mut last_brightness: i32 = 0;
 
+        let mut last_net_online: Option<bool> = None;
+        let mut last_net_kind: Option<NetKind> = None;
+        let mut last_wifi_sig: Option<i32> = None;
+
+        let mut last_audio_pct: Option<i32> = None;
+        let mut last_audio_mute: Option<bool> = None;
+
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
             let now_time = chrono::Local::now().format("%H:%M:%S").to_string();
             let mut updates: Vec<String> = Vec::new();
@@ -376,6 +451,32 @@ fn build_bar(app: &Application) -> ApplicationWindow {
             if battery_state_text != last_battery_state {
                 updates.push(format!("battery_state: '{}'", battery_state_text.replace('\'', "\\'")));
                 last_battery_state = battery_state_text;
+            }
+
+            let (online, kind, wifi_sig) = net_status();
+            if last_net_online.map(|v| v!=online).unwrap_or(true) {
+                updates.push(format!("network_online: '{}'", if online {"true"} else {"false"}));
+                last_net_online = Some(online);
+            }
+            if last_net_kind.map(|v| v!=kind).unwrap_or(true) {
+                let ks = match kind { NetKind::Wifi=>"wifi", NetKind::Eth=>"ethernet", NetKind::Other=>"other", NetKind::None=>"none"};
+                updates.push(format!("network_type: '{}'", ks));
+                last_net_kind = Some(kind);
+            }
+            if last_wifi_sig != wifi_sig {
+                if let Some(s) = wifi_sig { updates.push(format!("wifi_signal: '{}%'", s)); } else { updates.push("wifi_signal: ''".into()); }
+                last_wifi_sig = wifi_sig;
+            }
+
+            if let Some((pct, muted)) = read_audio_volume() {
+                if last_audio_pct.map(|v| v != pct).unwrap_or(true) {
+                    updates.push(format!("audio_volume: '{}%'", pct));
+                    last_audio_pct = Some(pct);
+                }
+                if last_audio_mute.map(|v| v != muted).unwrap_or(true) {
+                    updates.push(format!("audio_muted: '{}'", if muted { "true" } else { "false" }));
+                    last_audio_mute = Some(muted);
+                }
             }
 
             if !updates.is_empty() {
