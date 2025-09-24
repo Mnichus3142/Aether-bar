@@ -2,7 +2,7 @@
   --bar-height: 32px;
   --font-size: 12px;
 
-  --background-color: rgba(13, 9, 10, 0.25);
+  --background-color: rgba(13, 9, 10, 0.6);
   --text-color: rgba(234, 242, 239, 0.8);
 
   --shadow: 0 0 8px rgba(12, 14, 13, 0.8);
@@ -33,7 +33,7 @@ html, body, .bar, .bar * {
   user-select: none;
 }
 
-.left, .center, .right {
+.left, .right {
 	font-size: var(--font-size);
 	display: flex;
 	align-items: center;
