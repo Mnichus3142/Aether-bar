@@ -8,10 +8,10 @@ let clock;
 let activeWindow;
 let battery;
 
+// Listen for 'config' events to set up the status bar elements
 window.addEventListener('config', (e) => {
     elementProperties = e.detail || window.AetherBarConfig || {};
 
-    
     containers.left = document.getElementById('left');
     containers.center = document.getElementById('center');
     containers.right = document.getElementById('right');
@@ -43,6 +43,7 @@ window.addEventListener('config', (e) => {
     }
 });
 
+// Listen for 'tick' events to update system details
 window.addEventListener('tick', (e) => {
     const detail = e.detail || {};
     systemDetails = { ...systemDetails, ...detail };
@@ -59,6 +60,7 @@ window.addEventListener('tick', (e) => {
     if ('audio_volume' in detail || 'audio_muted' in detail) updateAudio();
 });
 
+// Function to update the audio volume display
 const updateAudio = () => {
     const el = slots.volume;
     if (!el) return;
@@ -79,17 +81,17 @@ const updateAudio = () => {
         vol = ` ${vol}%`;
     }
 
-    const iconHtml = `<span class="material-symbols-outlined volumeIcon">${icon}</span>`;
+    const iconHtml = `<img src="svg/${icon}.svg" class="volumeIcon icon">`;
     el.innerHTML = "<div class='volume'>" + iconHtml + vol + "</div>";
 };
 
+// Function to update the network status display
 const updateNetwork = () => {
     const el = slots.network;
     if (!el) return;
 
     const online = systemDetails.network_online;
     const kind = systemDetails.network_type.toLowerCase();
-    const wifi = kind;
     const sigRaw = systemDetails.wifi_signal || '';
     let sig = parseInt(String(sigRaw).replace('%','').trim(), 10);
 
@@ -116,49 +118,52 @@ const updateNetwork = () => {
     if (icon == 'lan') internetIcon = 'lan'
     else internetIcon = 'wifi'
 
-    const iconHtml = `<span class="material-symbols-outlined ${internetIcon}">` + icon + `</span>`;
+    const iconHtml = `<img src="svg/${icon}.svg" class="networkIcon ${internetIcon} icon">`;
     el.innerHTML = "<div class='network'>" + iconHtml + sig + "</div>";
 };
 
+// Function to update the brightness display
 const updateBrightness = () => {
     const el = slots.brightness;
     if (!el) return;
 
     const lvl = parseInt(String(systemDetails.brightness).replace('%', ''), 10) || 0;
 
-    let iconName = 'wb_sunny';
-    if (lvl < 20) iconName = 'brightness_low';
-    else if (lvl < 40) iconName = 'brightness_5';
-    else if (lvl < 60) iconName = 'brightness_medium';
-    else if (lvl < 80) iconName = 'brightness_high';
-    else iconName = 'brightness_7';
+    let iconName = '';
+    if (lvl < 33) iconName = 'brightness_low';
+    else if (lvl < 66) iconName = 'brightness_medium';
+    else iconName = 'brightness_high';
 
-    const iconHtml = `<span class="material-icons-round">` + iconName + `</span>`;
+    const iconHtml = `<img src="svg/${iconName}.svg" class="brightnessIcon icon">`;
 
     el.innerHTML = "<div class='brightness'>" + iconHtml + " " + systemDetails.brightness + "</div>";
 }
 
+// Function to update the disk usage display
 const updateDisk = () => {
     const el = slots.disk;
     if (!el) return;
 
-    el.innerHTML = "<div class='disk'>" + ' <span class="material-symbols-outlined diskIcon">' + 'hard_disk' + `</span>` + `<a>${systemDetails.disk_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='disk'>" + ' <img src="svg/disk.svg" class="diskIcon icon">' + `<a>${systemDetails.disk_usage}</a>` + " </div>";
 }
 
+// Function to update the CPU usage display
 const updateCPU = () => {
     const el = slots.cpu;
     if (!el) return;
 
-    el.innerHTML = "<div class='cpu'>" + ' <img src="svg/cpu.svg" class="cpuIcon">' + 'memory' + `</>`+ `<a>${systemDetails.cpu_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='cpu'>" + ' <img src="svg/cpu.svg" class="cpuIcon icon">' + `<a>${systemDetails.cpu_usage}</a>` + " </div>";
 }
 
+// Function to update the Memory usage display
 const updateMemory = () => {
     const el = slots.memory;
     if (!el) return;
 
-    el.innerHTML = "<div class='memory'>" + ' <span class="material-symbols-outlined" class="memoryIcon">' + 'memory_alt' + `</span>` + `<a>${systemDetails.memory_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='memory'>" + ' <img src="svg/memory.svg" class="memoryIcon icon">' + `<a>${systemDetails.memory_usage}</a>` + " </div>";
 }
 
+// Function to update the workspace display
 const updateWorkspace = () => {
     const el = slots.workspace;
     if (!el) return;
@@ -179,6 +184,7 @@ const updateWorkspace = () => {
     el.innerHTML = "<div class='workspaces'>" + allStr + "</div>";
 }
 
+// Function to update the clock display
 const updateClock = () => {
     const el = slots.clock;
     if (!el) return;
@@ -215,9 +221,10 @@ const updateClock = () => {
         formatted += ` ${A}`;
     }
 
-    el.innerHTML = "<div class='clock'>" + `${prefix || ''}${formatted}${suffix || ''}` + "</div>";
+    el.innerHTML = "<div class='clock'><img src='svg/clock.svg' class='clockIcon icon'>" + `${prefix || ''}${formatted}${suffix || ''}` + "</div>";
 }
 
+// Function to update the active client display
 const updateActiveClient = () => {
     const el = slots.activeWindow;
     if (!el) return;
@@ -256,7 +263,7 @@ const updateBattery = () => {
             break;
     }
 
-    const iconHtml = `<span class="material-symbols-outlined ${stateClass}">` + iconName + `</span>`;
+    const iconHtml = `<img src="svg/${iconName}.svg" class="batteryIcon icon ${stateClass}">`;
 
     el.innerHTML = "<div class='battery'>" + iconHtml + " " + systemDetails.battery + "</div>";
 }
