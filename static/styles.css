@@ -5,7 +5,7 @@
   --background-color: rgba(13, 9, 10, 0.6);
   --text-color: rgba(234, 242, 239, 0.8);
 
-  --shadow: 0 0 8px rgba(12, 14, 13, 0.8);
+  --shadow: 0 0 2px rgba(12, 14, 13, 0.8);
 }
 
 * {
@@ -58,6 +58,7 @@ html, body, .bar, .bar * {
 	justify-content: left;
 	margin-left: 8px;
 	padding-right: 10px;
+	padding-left: 10px;
 }
 
 .center {
@@ -67,6 +68,8 @@ html, body, .bar, .bar * {
 .right {
 	justify-content: right;
 	margin-right: 8px;
+	padding-right: 10px;
+	padding-left: 10px;
 }
 
 .right > * {
@@ -84,12 +87,18 @@ html, body, .bar, .bar * {
 }
 
 .clock {
-
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 .battery {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+
 	position: relative;
-	top: -2px;
+	top: 0px;
 }
 
 .workspaces {
@@ -110,7 +119,9 @@ html, body, .bar, .bar * {
 }
 
 .brightness {
-	
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 .material-icons-round {
@@ -129,7 +140,7 @@ html, body, .bar, .bar * {
 }
 
 .discharging {
-	top: 4px;
+	top: 3px;
 }
 
 .wifi {
@@ -142,9 +153,20 @@ html, body, .bar, .bar * {
 	top: 1px;
 }
 
+.network {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.volume {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
 .volumeIcon {
-	font-size: var(--font-size);
-	top: 2px;
+	
 }
 
 .disk, .cpu, .memory {
@@ -158,20 +180,26 @@ html, body, .bar, .bar * {
 }
 
 .cpu a, .memory a, .disk a {
+	position: relative;
+	top: 0px;
 	min-width: 3ch;
 }
 
 .diskIcon {
-	font-size: calc(var(--font-size) + 4px);
 	top: 0px;
 }
 
 .cpuIcon {
-	font-size: calc(var(--font-size) + 4px);
 	top: 0px;
 }
 
 .memoryIcon {
-	font-size: calc(var(--font-size) + 4px);
 	top: 0px;
+}
+
+.icon {
+	height: calc(var(--font-size) + 3px);
+	position: relative;
+	top: -1px;
+	background-color: transparent;
 }
