@@ -21,7 +21,7 @@ use nix::sys::statvfs::statvfs;
 use std::path::Path;
 use std::process::Command;
 
-const APP_ID: &str = "dev.example.aether";
+const APP_ID: &str = "dev.example.aether-bar";
 const BAR_HEIGHT: i32 = 42;
 
 fn find_static_dir() -> PathBuf {
@@ -136,7 +136,7 @@ fn read_audio_volume() -> Option<(i32, bool)> {
 fn build_bar(app: &Application) -> ApplicationWindow {
     let win = ApplicationWindow::builder()
         .application(app)
-        .title("Aether")
+        .title("Aether-bar")
         .decorated(false)
         .resizable(false)
         .build();
@@ -161,7 +161,7 @@ fn build_bar(app: &Application) -> ApplicationWindow {
     win.set_keyboard_mode(KeyboardMode::OnDemand);
 
     if gls::is_supported() {
-        eprintln!("[Aether] layer-shell supported: anchors Left+Right -> full width");
+        eprintln!("[Aether-bar] layer-shell supported: anchors Left+Right -> full width");
         win.set_size_request(-1, BAR_HEIGHT);
         if let Some(display) = gdk::Display::default() {
             let monitors = display.monitors();
@@ -175,7 +175,7 @@ fn build_bar(app: &Application) -> ApplicationWindow {
             win.set_default_size(800, BAR_HEIGHT);
         }
     } else {
-        eprintln!("[Aether] layer-shell NOT supported: using normal window fallback");
+        eprintln!("[Aether-bar] layer-shell NOT supported: using normal window fallback");
         if let Some(display) = gdk::Display::default() {
             let monitors = display.monitors();
             let width = (0..monitors.n_items())
@@ -203,7 +203,7 @@ fn build_bar(app: &Application) -> ApplicationWindow {
 
     let static_dir = find_static_dir();
 
-    let user_config_dir = glib::user_config_dir().join("aether");
+    let user_config_dir = glib::user_config_dir().join("Aether-bar");
     let user_css_path = user_config_dir.join("style.css");
     let mut user_css_exists = user_css_path.exists();
 
@@ -212,17 +212,17 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         match fs::read_to_string(&default_css_path) {
             Ok(default_css) => {
                 if let Err(e) = fs::create_dir_all(&user_config_dir) {
-                    eprintln!("[Aether] Could not create config directory: {}", e);
+                    eprintln!("[Aether-bar] Could not create config directory: {}", e);
                 }
                 match fs::write(&user_css_path, default_css) {
                     Ok(_) => {
-                        eprintln!("[Aether] Created default ~/.config/aether/style.css");
+                        eprintln!("[Aether-bar] Created default ~/.config/Aether-bar/style.css");
                         user_css_exists = true;
                     }
-                    Err(e) => eprintln!("[Aether] Could not save user style: {}", e),
+                    Err(e) => eprintln!("[Aether-bar] Could not save user style: {}", e),
                 }
             }
-            Err(e) => eprintln!("[Aether] Could not read default CSS: {}", e),
+            Err(e) => eprintln!("[Aether-bar] Could not read default CSS: {}", e),
         }
     }
 
@@ -234,15 +234,15 @@ fn build_bar(app: &Application) -> ApplicationWindow {
         match fs::read_to_string(&default_cfg_path) {
             Ok(default_cfg) => {
                 if let Err(e) = fs::create_dir_all(&user_config_dir) {
-                    eprintln!("[Aether] Could not create config directory: {}", e);
+                    eprintln!("[Aether-bar] Could not create config directory: {}", e);
                 }
                 if let Err(e) = fs::write(&user_config_json_path, default_cfg) {
-                    eprintln!("[Aether] Could not save user config: {}", e);
+                    eprintln!("[Aether-bar] Could not save user config: {}", e);
                 } else {
-                    eprintln!("[Aether] Created default ~/.config/aether/config.json");
+                    eprintln!("[Aether-bar] Created default ~/.config/Aether-bar/config.json");
                 }
             }
-            Err(e) => eprintln!("[Aether] Could not read default config.json: {}", e),
+            Err(e) => eprintln!("[Aether-bar] Could not read default config.json: {}", e),
         }
     }
 
@@ -253,14 +253,14 @@ fn build_bar(app: &Application) -> ApplicationWindow {
 
     let index_path = static_dir.join("index.html");
     let index_uri = File::for_path(&index_path).uri();
-    eprintln!("[Aether] Loading URI: {}", index_uri);
+    eprintln!("[Aether-bar] Loading URI: {}", index_uri);
 
     {
         let user_css_uri = user_css_uri.clone();
         let user_css_exists_captured = user_css_exists;
         let injected_config_json = injected_config_json.clone();
         webview.connect_load_changed(move |wv, ev| {
-            eprintln!("[Aether] WebView load_changed: {:?}", ev);
+            eprintln!("[Aether-bar] WebView load_changed: {:?}", ev);
             if matches!(ev, webkit6::LoadEvent::Committed | webkit6::LoadEvent::Finished) {
                 if user_css_exists_captured {
                     let js = format!(
@@ -290,8 +290,8 @@ fn build_bar(app: &Application) -> ApplicationWindow {
                 let js_cfg = format!(
                     r#"(function(){{
   try {{
-    window.AetherConfig = Object.freeze({});
-    window.dispatchEvent(new CustomEvent('config', {{ detail: window.AetherConfig }}));
+    window.AetherBarConfig = Object.freeze({});
+    window.dispatchEvent(new CustomEvent('config', {{ detail: window.AetherBarConfig }}));
   }} catch (e) {{ console.error('Inject config failed', e); }}
 }})();"#,
                     injected_config_json

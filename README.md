@@ -1,4 +1,4 @@
-<h3 align="center">Aether is a bar designed for my hyprland setup.</h3>
+<h3 align="center">Aether-bar is a bar designed for my hyprland setup.</h3>
 
 <hr>
 
@@ -16,7 +16,7 @@ Here you have screenshot of my setup.
 
 ![Screenshot](Screenshot.png)
 
-Config should automatically be created in ```.config/Aether``` and that config is prefered, so if you want to change something feel free to do it there.
+Config should automatically be created in ```.config/Aether-bar``` and that config is prefered, so if you want to change something feel free to do it there.
 
 You are able to delete every component and move it from container to container and change clock format. You can delete hours, minutes or seconds and change clock format from 12-hour to 24-hour changing hh to HH
 

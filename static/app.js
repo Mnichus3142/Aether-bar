@@ -9,17 +9,18 @@ let activeWindow;
 let battery;
 
 window.addEventListener('config', (e) => {
-    elementProperties = e.detail || window.AetherConfig || {};
+    elementProperties = e.detail || window.AetherBarConfig || {};
 
+    
     containers.left = document.getElementById('left');
     containers.center = document.getElementById('center');
     containers.right = document.getElementById('right');
-
+    
     for (const pos of ['left', 'center', 'right']) {
         const el = containers[pos];
         if (el) Array.from(el.querySelectorAll('.slot, .spacer')).forEach(n => n.remove());
     }
-
+    
     slots = {};
     const appendedCount = { left: 0, center: 0, right: 0 };
     for (const [name, cfg] of Object.entries(elementProperties)) {
@@ -148,14 +149,14 @@ const updateCPU = () => {
     const el = slots.cpu;
     if (!el) return;
 
-    el.innerHTML = "<div class='cpu'>" + ' <span class="material-symbols-outlined cpuIcon">' + 'memory' + `</span>`+ `<a>${systemDetails.cpu_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='cpu'>" + ' <img src="svg/cpu.svg" class="cpuIcon">' + 'memory' + `</>`+ `<a>${systemDetails.cpu_usage}</a>` + " </div>";
 }
 
 const updateMemory = () => {
     const el = slots.memory;
     if (!el) return;
 
-    el.innerHTML = "<div class='memory'>" + ' <span class="material-symbols-outlined cpuIcon">' + 'memory_alt' + `</span>` + `<a>${systemDetails.memory_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='memory'>" + ' <span class="material-symbols-outlined" class="memoryIcon">' + 'memory_alt' + `</span>` + `<a>${systemDetails.memory_usage}</a>` + " </div>";
 }
 
 const updateWorkspace = () => {
