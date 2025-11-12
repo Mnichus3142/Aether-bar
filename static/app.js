@@ -1,5 +1,21 @@
 let elementProperties = {}
-let systemDetails = {}
+let systemDetails = {
+	"audio_volume": "0%",
+	"audio_muted": "false",
+	"network_online": "false",
+	"network_type": "none",
+	"wifi_signal": "0%",
+	"brightness": "0%",
+	"disk_usage": "0%",
+	"cpu_usage": "0%",
+	"memory_usage": "0%",
+	"time": "00:00:00",
+	"workspace": "Workspace { id: 1, monitor_id: 0, focused: true }",
+	"workspaces": "",
+	"client": "Client { id: 0, initial_title: \"\", title: \"\", class: \"\", instance: \"\", pid: 0 }",
+	"battery": "100%",
+	"battery_state": "Discharging"
+}
 
 let containers = {}
 let slots = {}
