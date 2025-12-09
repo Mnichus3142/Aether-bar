@@ -1,20 +1,18 @@
 let elementProperties = {}
 let systemDetails = {
-	"audio_volume": "0%",
-	"audio_muted": "false",
-	"network_online": "false",
-	"network_type": "none",
-	"wifi_signal": "0%",
-	"brightness": "0%",
-	"disk_usage": "0%",
-	"cpu_usage": "0%",
-	"memory_usage": "0%",
-	"time": "00:00:00",
+	"audio_level": 0,
+	"audio_status": 0,
+	"net_status": 0,
+	"net_signal_strength": 0,
+	"brightness": 0,
+	"disk_usage": 0,
+	"cpu_usage": 0,
+	"ram_usage": 0,
 	"workspace": "Workspace { id: 1, monitor_id: 0, focused: true }",
 	"workspaces": "",
 	"client": "Client { id: 0, initial_title: \"\", title: \"\", class: \"\", instance: \"\", pid: 0 }",
-	"battery": "100%",
-	"battery_state": "Discharging"
+	"bat_capacity": 100,
+	"bat_status": 1
 }
 
 let containers = {}
@@ -23,6 +21,18 @@ let slots = {}
 let clock;
 let activeWindow;
 let battery;
+
+let newData = {};
+
+const ws = new WebSocket("ws://localhost:3001");
+ws.onopen = () => {
+	ws.send(JSON.stringify({ type: "request_update" }));
+}
+
+ws.onmessage = (event) => {
+	newData = JSON.parse(event.data);
+	updateAll();
+}
 
 // Listen for 'config' events to set up the status bar elements
 window.addEventListener('config', (e) => {
@@ -59,34 +69,35 @@ window.addEventListener('config', (e) => {
     }
 });
 
-// Listen for 'tick' events to update system details
-window.addEventListener('tick', (e) => {
-    const detail = e.detail || {};
+const updateAll = () => {
+	const detail = newData.datapack || {};
     systemDetails = { ...systemDetails, ...detail };
 
-    if ('time' in detail) updateClock();
+    updateClock();
     if ('client' in detail) updateActiveClient();
-    if ('battery' in detail || 'battery_state' in detail) updateBattery();
+    if ('bat_capacity' in detail || 'bat_status' in detail) updateBattery();
     if ('workspace' in detail || 'workspaces' in detail) updateWorkspace();
     if ('cpu_usage' in detail) updateCPU();
-    if ('memory_usage' in detail) updateMemory();
+    if ('ram_usage' in detail) updateMemory();
     if ('disk_usage' in detail) updateDisk();
     if ('brightness' in detail) updateBrightness();
-    if ('network_online' in detail || 'network_type' in detail || 'network_kind' in detail || 'wifi_signal' in detail) updateNetwork();
-    if ('audio_volume' in detail || 'audio_muted' in detail) updateAudio();
-});
+    if ('net_status' in detail || 'net_signal_strength' in detail) updateNetwork();
+    if ('audio_level' in detail || 'audio_status' in detail) updateAudio();
+
+	setTimeout(() => {
+		ws.send(JSON.stringify({ type: "request_update" }));
+	}, 100);
+}
 
 // Function to update the audio volume display
 const updateAudio = () => {
     const el = slots.volume;
     if (!el) return;
 
-    const volRaw = systemDetails.audio_volume;
-    let vol = parseInt(String(volRaw).replace('%',''), 10);
-    const muted = systemDetails.audio_muted;
+	let vol = systemDetails.audio_level;
 
     let icon = '';
-    if (muted === 'true') {
+    if (vol === 0 || systemDetails.audio_status === 0) {
         icon = 'volume_off';
         vol = '';
     }
@@ -106,36 +117,28 @@ const updateNetwork = () => {
     const el = slots.network;
     if (!el) return;
 
-    const online = systemDetails.network_online;
-    const kind = systemDetails.network_type.toLowerCase();
-    const sigRaw = systemDetails.wifi_signal || '';
-    let sig = parseInt(String(sigRaw).replace('%','').trim(), 10);
-
     let icon = '';
-    if (online === 'false') {
+    if (systemDetails.net_status === -1) {
         icon = 'signal_wifi_off';
     }
     else {
-        if (kind == 'wifi') {
-            if (sig < 10) icon = 'signal_wifi_0_bar'
-            else if (sig < 25) icon = 'network_wifi_1_bar'
-            else if (sig < 50) icon = 'network_wifi_2_bar'
-            else if (sig < 75) icon = 'network_wifi_3_bar'
-            else if (sig < 90) icon = 'network_wifi'
+        if (systemDetails.net_status == 1) {
+            if (systemDetails.net_signal_strength < 10) icon = 'signal_wifi_0_bar'
+            else if (systemDetails.net_signal_strength < 25) icon = 'network_wifi_1_bar'
+            else if (systemDetails.net_signal_strength < 50) icon = 'network_wifi_2_bar'
+            else if (systemDetails.net_signal_strength < 75) icon = 'network_wifi_3_bar'
+            else if (systemDetails.net_signal_strength < 90) icon = 'network_wifi'
             else icon = 'signal_wifi_4_bar'
         }
         else icon = 'lan'
     }
-
-    if (isNaN(sig)) sig = '';
-    else sig = ` ${sig}%`
 
     let internetIcon = '';
     if (icon == 'lan') internetIcon = 'lan'
     else internetIcon = 'wifi'
 
     const iconHtml = `<img src="svg/${icon}.svg" class="networkIcon ${internetIcon} icon">`;
-    el.innerHTML = "<div class='network'>" + iconHtml + sig + "</div>";
+    el.innerHTML = "<div class='network'>" + iconHtml + systemDetails.net_signal_strength + "%</div>";
 };
 
 // Function to update the brightness display
@@ -152,7 +155,7 @@ const updateBrightness = () => {
 
     const iconHtml = `<img src="svg/${iconName}.svg" class="brightnessIcon icon">`;
 
-    el.innerHTML = "<div class='brightness'>" + iconHtml + " " + systemDetails.brightness + "</div>";
+    el.innerHTML = "<div class='brightness'>" + iconHtml + " " + systemDetails.brightness + "%</div>";
 }
 
 // Function to update the disk usage display
@@ -160,7 +163,7 @@ const updateDisk = () => {
     const el = slots.disk;
     if (!el) return;
 
-    el.innerHTML = "<div class='disk'>" + ' <img src="svg/disk.svg" class="diskIcon icon">' + `<a>${systemDetails.disk_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='disk'>" + ' <img src="svg/disk.svg" class="diskIcon icon">' + `<a>${systemDetails.disk_usage}%</a>` + " </div>";
 }
 
 // Function to update the CPU usage display
@@ -168,7 +171,7 @@ const updateCPU = () => {
     const el = slots.cpu;
     if (!el) return;
 
-    el.innerHTML = "<div class='cpu'>" + ' <img src="svg/cpu.svg" class="cpuIcon icon">' + `<a>${systemDetails.cpu_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='cpu'>" + ' <img src="svg/cpu.svg" class="cpuIcon icon">' + `<a>${systemDetails.cpu_usage}%</a>` + " </div>";
 }
 
 // Function to update the Memory usage display
@@ -176,7 +179,7 @@ const updateMemory = () => {
     const el = slots.memory;
     if (!el) return;
 
-    el.innerHTML = "<div class='memory'>" + ' <img src="svg/memory.svg" class="memoryIcon icon">' + `<a>${systemDetails.memory_usage}</a>` + " </div>";
+    el.innerHTML = "<div class='memory'>" + ' <img src="svg/memory.svg" class="memoryIcon icon">' + `<a>${systemDetails.ram_usage}%</a>` + " </div>";
 }
 
 // Function to update the workspace display
@@ -210,7 +213,7 @@ const updateClock = () => {
     const [prefix, suffix] = tpl.split(/\{[^}]*\}/);
     const pattern = match ? match[1] : 'HH:mm:ss';
 
-    const [hStr, mStr, sStr] = (systemDetails?.time || '00:00:00').split(':');
+    const [hStr, mStr, sStr] = new Date().toLocaleTimeString('en-US', { hour12: false }).split(':');
     const h = Number(hStr) || 0;
     const m = Number(mStr) || 0;
     const s = Number(sStr) || 0;
@@ -255,24 +258,22 @@ const updateBattery = () => {
     const el = slots.battery;
     if (!el) return;
 
-    const level = Number.parseInt(String(systemDetails.battery), 10);
-
     let iconName = '';
     let stateClass = '';
-    switch (systemDetails.battery_state) {
-        case "Charging":
+    switch (systemDetails.bat_status) {
+        case 1:
             iconName = 'battery_android_bolt';
 
             stateClass = 'charging';
             break;
         default:
-            if (level < 13) iconName = 'battery_android_0';
-            else if (level < 26) iconName = 'battery_android_1';
-            else if (level < 38) iconName = 'battery_android_2';
-            else if (level < 50) iconName = 'battery_android_3';
-            else if (level < 63) iconName = 'battery_android_4';
-            else if (level < 75) iconName = 'battery_android_5';
-            else if (level < 88) iconName = 'battery_android_6';
+            if (systemDetails.bat_capacity < 13) iconName = 'battery_android_0';
+            else if (systemDetails.bat_capacity  < 26) iconName = 'battery_android_1';
+            else if (systemDetails.bat_capacity  < 38) iconName = 'battery_android_2';
+            else if (systemDetails.bat_capacity  < 50) iconName = 'battery_android_3';
+            else if (systemDetails.bat_capacity  < 63) iconName = 'battery_android_4';
+            else if (systemDetails.bat_capacity  < 75) iconName = 'battery_android_5';
+            else if (systemDetails.bat_capacity  < 88) iconName = 'battery_android_6';
             else iconName = 'battery_android_full';
 
             stateClass = 'discharging';
@@ -281,5 +282,5 @@ const updateBattery = () => {
 
     const iconHtml = `<img src="svg/${iconName}.svg" class="batteryIcon icon ${stateClass}">`;
 
-    el.innerHTML = "<div class='battery'>" + iconHtml + " " + systemDetails.battery + "</div>";
+    el.innerHTML = "<div class='battery'>" + iconHtml + " " + systemDetails.bat_capacity + "%</div>";
 }
