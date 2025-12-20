@@ -1,6 +1,5 @@
-<<<<<<< HEAD
-# Aether
-=======
+# Aether-bar
+
 <h3 align="center">Aether-bar is a bar designed for my hyprland setup.</h3>
 
 <hr>
@@ -41,4 +40,3 @@ Then run an app
 ```
 
 Made with ❤️ by [Mnichus3142](https://github.com/Mnichus3142)
->>>>>>> 17b0837 (Update: Readme update)
