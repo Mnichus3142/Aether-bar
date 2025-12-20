@@ -27,6 +27,7 @@ let newData = {};
 const ws = new WebSocket("ws://localhost:3001");
 ws.onopen = () => {
 	ws.send(JSON.stringify({ type: "request_update" }));
+	console.log("WebSocket connection established.");
 }
 
 ws.onmessage = (event) => {
@@ -138,7 +139,7 @@ const updateNetwork = () => {
     else internetIcon = 'wifi'
 
     const iconHtml = `<img src="svg/${icon}.svg" class="networkIcon ${internetIcon} icon">`;
-    el.innerHTML = "<div class='network'>" + iconHtml + systemDetails.net_signal_strength + "%</div>";
+    el.innerHTML = "<div class='network'>" + iconHtml + `${systemDetails.net_status === 1 ? systemDetails.net_signal_strength + '%' : ''}` + "</div>";
 };
 
 // Function to update the brightness display

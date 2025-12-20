@@ -5,7 +5,7 @@
   --background-color: rgba(13, 9, 10, 0.6);
   --text-color: rgba(234, 242, 239, 0.8);
 
-  --shadow: 0 0 2px rgba(12, 14, 13, 0.8);
+  --shadow: 0 0 8px rgba(12, 14, 13, 0.8);
 }
 
 * {
@@ -57,8 +57,8 @@ html, body, .bar, .bar * {
 .left {
 	justify-content: left;
 	margin-left: 8px;
-	padding-right: 10px;
-	padding-left: 10px;
+	padding-right: 0px;
+	padding-left: 5px;
 }
 
 .center {
@@ -68,8 +68,8 @@ html, body, .bar, .bar * {
 .right {
 	justify-content: right;
 	margin-right: 8px;
-	padding-right: 10px;
 	padding-left: 10px;
+	padding-right: 10px;
 }
 
 .right > * {
@@ -86,17 +86,12 @@ html, body, .bar, .bar * {
 	
 }
 
-.clock {
-	display: flex;
-	align-items: center;
-	gap: 4px;
+.clockIcon {
+	position: relative;
+	top: 0px;
 }
 
 .battery {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-
 	position: relative;
 	top: 0px;
 }
@@ -119,87 +114,66 @@ html, body, .bar, .bar * {
 }
 
 .brightness {
-	display: flex;
-	align-items: center;
-	gap: 4px;
+	
 }
 
-.material-icons-round {
-	font-size: var(--font-size);
-	position: relative;
-	top: 1px;
-}
-
-.material-symbols-outlined {
-	font-size: calc(var(--font-size) + 4px);
+.icon {
+	height: calc(var(--font-size) + 4px);
 	position: relative;
 }
 
 .charging {
-	top: 4px;
+	top: 0px;
 }
 
 .discharging {
-	top: 3px;
+	top: 0px;
 }
 
 .wifi {
 	font-size: var(--font-size);
-	top: 1px;
+	top: 0px;
 }
 
 .lan {
 	font-size: var(--font-size);
-	top: 1px;
+	top: 0px;
 }
 
-.network {
+.volumeIcon {
+	font-size: var(--font-size);
+	top: 0px;
+}
+
+.disk, .cpu, .memory, .volume, .network, .brightness, .battery, .clock {
+	font-size: var(--font-size);
+	position: relative;
+	top: -1px;
+
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-.volume {
-	display: flex;
-	align-items: center;
-	gap: 2px;
-}
-
-.volumeIcon {
-	
-}
-
-.disk, .cpu, .memory {
-	font-size: var(--font-size);
-	position: relative;
-	top: -1px;
-
-	display: flex;
-	align-items: center;
-	gap: 2px;
+.memory {
+	margin-left: -5px;
 }
 
 .cpu a, .memory a, .disk a {
-	position: relative;
-	top: 0px;
 	min-width: 3ch;
 }
 
 .diskIcon {
-	top: 0px;
+	font-size: calc(var(--font-size) + 4px);
+	top: -1px;
 }
 
 .cpuIcon {
-	top: 0px;
+	font-size: calc(var(--font-size) + 4px);
+	top: -1px;
 }
 
 .memoryIcon {
-	top: 0px;
-}
-
-.icon {
-	height: calc(var(--font-size) + 3px);
-	position: relative;
+	font-size: calc(var(--font-size) + 4px);
 	top: -1px;
-	background-color: transparent;
 }
