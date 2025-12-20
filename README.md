@@ -1,5 +1,3 @@
-# Aether-bar
-
 <h3 align="center">Aether-bar is a bar designed for my hyprland setup.</h3>
 
 <hr>
