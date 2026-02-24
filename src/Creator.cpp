@@ -8,8 +8,8 @@
 #include <json/writer.h>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 #include "spdlog/spdlog.h"
+#include "Widget.h"
 
 Creator::Creator(GtkWidget *left_zone, GtkWidget *center_zone, GtkWidget *right_zone) {
     this->left_zone = left_zone;
@@ -21,33 +21,25 @@ Creator::Creator(GtkWidget *left_zone, GtkWidget *center_zone, GtkWidget *right_
 
 void Creator::addToZones() {
     for (Json::Value::const_iterator it = this->config.begin(); it != this->config.end(); ++it) {
-        std::string key = it.name();
+        std::string zone = it.name();
         Json::Value value = *it;
 
         for (Json::Value::const_iterator ot = value.begin(); ot != value.end(); ++ot) {
             std::string name = ot.name();
             Json::Value value2 = *ot;
 
-            this->addToZone(key, name, value2);
+            if (zone == "left") {
+                Widget *widget = new Widget(this->left_zone, name);
+            }
+
+            else if (zone == "center") {
+                Widget *widget = new Widget(this->center_zone, name);
+            }
+
+            else if (zone == "right") {
+                Widget *widget = new Widget(this->right_zone, name);
+            }
         }
-    }
-}
-
-void Creator::addToZone(std::string zone, std::string name, Json::Value value) {
-    Element el;
-    el.name = name;
-
-    for (Json::Value::const_iterator it = value.begin(); it != value.end(); ++it) {
-        std::string key = it.name();
-        std::string value = it->toStyledString();
-        value.erase(value.begin(), value.begin() + 1);
-        value.erase(value.end() - 2, value.end() - 1);
-
-        el.properties.push_back({key, value});
-    }
-
-    if (zone == "left") {
-        this->zones.Left.push_back(el);
     }
 }
 

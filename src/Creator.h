@@ -9,7 +9,6 @@
 #include <json/value.h>
 #include <json/reader.h>
 #include <json/writer.h>
-#include "Zones.h"
 
 class Creator {
     private:
@@ -17,7 +16,6 @@ class Creator {
         GtkWidget *center_zone;
         GtkWidget *right_zone;
         Json::Value config;
-        Zones zones;
 
     public:
         Creator(GtkWidget *left_zone, GtkWidget *center_zone, GtkWidget *right_zone);
@@ -26,7 +24,6 @@ class Creator {
         void addToRightZone(GtkWidget *widget);
         Json::Value readConfigFile();
         void addToZones();
-        void addToZone(std::string zone, std::string name, Json::Value value);
 };
 
 

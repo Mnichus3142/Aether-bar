@@ -62,20 +62,6 @@ static void on_css_changed(GFileMonitor *monitor, GFile *file, GFile *other_file
 	if (ev == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT) load_css();
 }
 
-// Clock update
-static gboolean update_clock(gpointer label) {
-    time_t rawtime;
-    struct tm *timeinfo;
-    char buffer[80];
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    strftime(buffer, sizeof(buffer), "%H:%M:%S", timeinfo);
-
-    gtk_label_set_text(GTK_LABEL(label), buffer);
-    return TRUE;
-}
-
 // Callback for executing shell commands on click
 static void on_click_execute(GtkGestureClick *gesture, int n_press, double x, double y, gpointer user_data) {
 	spdlog::info("[Aether-bar] Executing command");
