@@ -22,22 +22,19 @@ Creator::Creator(GtkWidget *left_zone, GtkWidget *center_zone, GtkWidget *right_
 void Creator::addToZones() {
     for (Json::Value::const_iterator it = this->config.begin(); it != this->config.end(); ++it) {
         std::string zone = it.name();
-        Json::Value value = *it;
+        Json::Value values = *it;
 
-        for (Json::Value::const_iterator ot = value.begin(); ot != value.end(); ++ot) {
-            std::string name = ot.name();
-            Json::Value value2 = *ot;
-
+        for (auto value : values) {
             if (zone == "left") {
-                Widget *widget = new Widget(this->left_zone, name);
+                Widget widget(this->left_zone, value["name"].asString());
             }
 
             else if (zone == "center") {
-                Widget *widget = new Widget(this->center_zone, name);
+                Widget widget(this->center_zone, value["name"].asString());
             }
 
             else if (zone == "right") {
-                Widget *widget = new Widget(this->right_zone, name);
+                Widget widget(this->right_zone, value["name"].asString());
             }
         }
     }

@@ -17,7 +17,6 @@ add_executable(Aether_bar main.cpp
         src/Widget.h
         src/functions/clock.cpp
         src/functions/battery.cpp
-        src/functions/updateWidget.cpp
         src/functions/brightness.cpp
         src/functions/cpu.cpp
         src/functions/disk.cpp

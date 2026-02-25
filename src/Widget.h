@@ -11,6 +11,7 @@
 class Widget {
     public:
         Widget(GtkWidget *zone, std::string name);
+        void updateWidget(int interval, gboolean (*updateFunction)(gpointer), gpointer data);
 };
 
 

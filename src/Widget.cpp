@@ -4,7 +4,6 @@
 
 #include "Widget.h"
 #include <gtk/gtk.h>
-#include "functions/updateWidget.cpp"
 #include "functions/clock.cpp"
 #include "functions/battery.cpp"
 #include "functions/brightness.cpp"
@@ -20,34 +19,39 @@ Widget::Widget(GtkWidget *zone, std::string name) {
     gtk_box_append(GTK_BOX(zone), label);
 
     if (name == "clock") {
-        updateWidget(1000, update_clock, label);
+        this->updateWidget(1000, update_clock, label);
     }
 
     else if (name == "battery") {
-        updateWidget(5000, update_battery, label);
+        this->updateWidget(5000, update_battery, label);
     }
 
     else if (name == "brightness") {
-        updateWidget(100, update_brightness, label);
+        this->updateWidget(100, update_brightness, label);
     }
 
     else if (name == "cpu") {
-        updateWidget(1000, update_cpu, label);
+        this->updateWidget(1000, update_cpu, label);
     }
 
     else if (name == "disk") {
-        updateWidget(5000, update_disk, label);
+        this->updateWidget(5000, update_disk, label);
     }
 
     else if (name == "memory") {
-        updateWidget(5000, update_memory, label);
+        this->updateWidget(5000, update_memory, label);
     }
 
     else if (name == "network") {
-        updateWidget(100, update_network, label);
+        this->updateWidget(100, update_network, label);
     }
 
     else if (name == "volume") {
-        updateWidget(1000, update_volume, label);
+        this->updateWidget(1000, update_volume, label);
     }
+}
+
+void Widget::updateWidget(int interval, gboolean (*updateFunction)(gpointer), gpointer data) {
+    updateFunction(data);
+    g_timeout_add(interval, updateFunction, data);
 }
