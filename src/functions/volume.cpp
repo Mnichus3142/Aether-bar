@@ -6,6 +6,7 @@
 #include <fstream>
 #include <memory>
 #include <gtk/gtk.h>
+#include "../Widget.h"
 
 static std::string exec(const char* cmd) {
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
@@ -22,24 +23,44 @@ static std::string exec(const char* cmd) {
     return result;
 }
 
-static gboolean update_volume(gpointer label) {
+static gboolean update_volume(gpointer data_ptr) {
+    WidgetData *data = (WidgetData*)data_ptr;
     std::string cmd = "wpctl get-volume @DEFAULT_AUDIO_SINK@";
     std::string output = exec(cmd.c_str());
 
-    if (output.find("[MUTED]") != std::string::npos) {
-        gtk_label_set_text(GTK_LABEL(label), "0");
-        return TRUE;
+    bool isMuted = (output.find("[MUTED]") != std::string::npos);
+    double vol = 0.0;
+
+    if (isMuted) {
+       gtk_label_set_text(GTK_LABEL(data->label), "0");
+       if (data->icon) {
+           std::string iconPath = data->iconBasePath + "volume_off.svg";
+           gtk_image_set_from_file(GTK_IMAGE(data->icon), iconPath.c_str());
+       }
+       return TRUE;
     }
 
     size_t pos = output.find("Volume: ");
     if (pos != std::string::npos) {
         const char* start = output.c_str() + pos + 8;
         char* end = nullptr;
-        double vol = g_ascii_strtod(start, &end);
+        vol = g_ascii_strtod(start, &end);
+        int volInt = (int)(vol * 100.0);
 
         char buffer[16];
-        snprintf(buffer, sizeof(buffer), "1|%.0f", vol * 100.0);
-        gtk_label_set_text(GTK_LABEL(label), buffer);
+        snprintf(buffer, sizeof(buffer), "%d", volInt);
+        gtk_label_set_text(GTK_LABEL(data->label), buffer);
+
+        if (data->icon) {
+            std::string iconName;
+            if (volInt == 0) iconName = "volume_off";
+            else if (volInt <= 33) iconName = "volume_mute";
+            else if (volInt <= 66) iconName = "volume_down";
+            else iconName = "volume_up";
+
+            std::string iconPath = data->iconBasePath + iconName + ".svg";
+            gtk_image_set_from_file(GTK_IMAGE(data->icon), iconPath.c_str());
+        }
     }
     return TRUE;
 }

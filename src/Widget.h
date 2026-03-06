@@ -7,11 +7,17 @@
 #include <string>
 #include <gtk/gtk.h>
 
+struct WidgetData {
+    GtkWidget *label;
+    GtkWidget *icon;
+    std::string iconBasePath;
+};
 
 class Widget {
     public:
-        Widget(GtkWidget *zone, std::string name);
-        void updateWidget(int interval, gboolean (*updateFunction)(gpointer), gpointer data);
+        Widget(GtkWidget *zone, std::string name, std::string format, std::string iconPath);
+        void makeWidget(std::string name, std::string format, WidgetData *data);
+        void updateWidget(int interval, gboolean (*updateFunction)(gpointer), WidgetData *data);
 };
 
 

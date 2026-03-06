@@ -6,8 +6,10 @@
 #include <fstream>
 #include <sys/statvfs.h>
 #include <gtk/gtk.h>
+#include "../Widget.h"
 
-static gboolean update_memory(gpointer label) {
+static gboolean update_memory(gpointer data_ptr) {
+    WidgetData *data = (WidgetData*)data_ptr;
     int msg;
 
     std::ifstream proc_mem("/proc/meminfo");
@@ -31,6 +33,11 @@ static gboolean update_memory(gpointer label) {
     char buffer[10];
     snprintf(buffer, sizeof(buffer), "%d", (int)msg);
 
-    gtk_label_set_text(GTK_LABEL(label), buffer);
+    gtk_label_set_text(GTK_LABEL(data->label), buffer);
+
+    if (data->icon) {
+         std::string iconPath = data->iconBasePath + "memory.svg";
+         gtk_image_set_from_file(GTK_IMAGE(data->icon), iconPath.c_str());
+    }
     return TRUE;
 }

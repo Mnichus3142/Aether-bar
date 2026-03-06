@@ -26,15 +26,15 @@ void Creator::addToZones() {
 
         for (auto value : values) {
             if (zone == "left") {
-                Widget widget(this->left_zone, value["name"].asString());
+                Widget widget(this->left_zone, value["name"].asString(), value["format"].asString(), value.get("icon", "").asString());
             }
 
             else if (zone == "center") {
-                Widget widget(this->center_zone, value["name"].asString());
+                Widget widget(this->center_zone, value["name"].asString(), value["format"].asString(), value.get("icon", "").asString());
             }
 
             else if (zone == "right") {
-                Widget widget(this->right_zone, value["name"].asString());
+                Widget widget(this->right_zone, value["name"].asString(), value["format"].asString(), value.get("icon", "").asString());
             }
         }
     }

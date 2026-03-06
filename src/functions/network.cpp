@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <gtk/gtk.h>
+#include "../Widget.h"
 
 #define BAD_SIGNAL_LEVEL -110
 #define GOOD_SIGNAL_LEVEL -40
@@ -52,38 +53,45 @@ static float parseSignalStrengthToPercentage(int8_t signal_level) {
     return (float)(signal_level - BAD_SIGNAL_LEVEL) / (float)(GOOD_SIGNAL_LEVEL - BAD_SIGNAL_LEVEL) * 100.0;
 }
 
-static gboolean update_network(gpointer label) {
+static gboolean update_network(gpointer data_ptr) {
+    WidgetData *data = (WidgetData*)data_ptr;
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
 
     int8_t msg = -1; // -1: down, 0: eth0 up, 1: wifi up
+    std::string iconName = "signal_wifi_off";
+    std::string text = "";
 
     if (isInterfaceUp("eth0", sock)) {
         msg = 0; // Ethernet up
-        char buffer[10];
-        snprintf(buffer, sizeof(buffer), "%d", (int)msg);
-
-        gtk_label_set_text(GTK_LABEL(label), buffer);
-        return TRUE;
+        iconName = "lan";
+        text = "Eth";
     }
 
     else if (isInterfaceUp("wlan0", sock)) {
         msg = 1; // WiFi up
-        float signal_strength = parseSignalStrengthToPercentage(getSignalStrength());
-        char buffer[10];
-        snprintf(buffer, sizeof(buffer), "%d|%d", msg, (int)signal_strength);
+        int signal_strength = (int)parseSignalStrengthToPercentage(getSignalStrength());
+        text = std::to_string(signal_strength);
 
-        gtk_label_set_text(GTK_LABEL(label), buffer);
-        return TRUE;
+        if (signal_strength < 10) iconName = "signal_wifi_0_bar";
+        else if (signal_strength < 25) iconName = "network_wifi_1_bar";
+        else if (signal_strength < 50) iconName = "network_wifi_2_bar";
+        else if (signal_strength < 75) iconName = "network_wifi_3_bar";
+        else if (signal_strength < 90) iconName = "network_wifi";
+        else iconName = "signal_wifi_4_bar";
     }
 
     else {
         // Network down
         msg = -1;
-        char buffer[10];
-        snprintf(buffer, sizeof(buffer), "%d", (int)msg);
-
-        gtk_label_set_text(GTK_LABEL(label), buffer);
-        return TRUE;
+        text = "Disconnected";
     }
-}
 
+    gtk_label_set_text(GTK_LABEL(data->label), text.c_str());
+
+    if (data->icon) {
+         std::string iconPath = data->iconBasePath + iconName + ".svg";
+         gtk_image_set_from_file(GTK_IMAGE(data->icon), iconPath.c_str());
+    }
+
+    return TRUE;
+}

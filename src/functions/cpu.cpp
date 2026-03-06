@@ -5,8 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <gtk/gtk.h>
+#include "../Widget.h"
 
-static gboolean update_cpu(gpointer label) {
+static gboolean update_cpu(gpointer data_ptr) {
+    WidgetData *data = (WidgetData*)data_ptr;
     static int32_t prev_total_jiffies = 0, prev_work_jiffies = 0;
     int32_t total_jiffies = 0, work_jiffies = 0;
 
@@ -40,6 +42,10 @@ static gboolean update_cpu(gpointer label) {
     char buffer[10];
     snprintf(buffer, sizeof(buffer), "%d", (int)cpu_usage);
 
-    gtk_label_set_text(GTK_LABEL(label), buffer);
+    gtk_label_set_text(GTK_LABEL(data->label), buffer);
+    if (data->icon) {
+         std::string iconPath = data->iconBasePath + "cpu.svg";
+         gtk_image_set_from_file(GTK_IMAGE(data->icon), iconPath.c_str());
+    }
     return TRUE;
 }
